@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MessageSquare, Workflow } from 'lucide-react';
 import {
   Sidebar,
@@ -13,13 +13,17 @@ import {
 } from "@/components/ui/sidebar";
 import ChatHistory from './ChatHistory';
 import WorkflowSearch from './WorkflowSearch';
+import WorkflowHistory from './WorkflowHistory';
 
 interface AppSidebarProps {
   activeView: 'chat' | 'workflows';
   onViewChange: (view: 'chat' | 'workflows') => void;
+  onWorkflowSelect?: (workflowId: string) => void;
 }
 
-const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
+const AppSidebar = ({ activeView, onViewChange, onWorkflowSelect }: AppSidebarProps) => {
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string>('');
+
   const menuItems = [
     {
       title: "Chat",
@@ -33,6 +37,13 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
     },
   ];
 
+  const handleWorkflowSelect = (workflowId: string) => {
+    setSelectedWorkflow(workflowId);
+    if (onWorkflowSelect) {
+      onWorkflowSelect(workflowId);
+    }
+  };
+
   return (
     <Sidebar className="border-r border-capital-light-blue/30">
       <SidebarContent className="bg-gradient-to-b from-capital-blue/5 to-capital-light-blue/10">
@@ -45,7 +56,12 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
-                    onClick={() => onViewChange(item.view)}
+                    onClick={() => {
+                      onViewChange(item.view);
+                      if (item.view === 'chat') {
+                        setSelectedWorkflow('');
+                      }
+                    }}
                     className={`transition-colors duration-200 ${
                       activeView === item.view 
                         ? 'bg-capital-blue text-white hover:bg-capital-dark-blue' 
@@ -69,9 +85,14 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
         )}
 
         {activeView === 'workflows' && (
-          <SidebarGroup>
-            <WorkflowSearch />
-          </SidebarGroup>
+          <>
+            <SidebarGroup>
+              <WorkflowSearch onWorkflowSelect={handleWorkflowSelect} />
+            </SidebarGroup>
+            <SidebarGroup>
+              <WorkflowHistory selectedWorkflow={selectedWorkflow} />
+            </SidebarGroup>
+          </>
         )}
       </SidebarContent>
     </Sidebar>

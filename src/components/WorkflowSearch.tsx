@@ -10,39 +10,37 @@ interface WorkflowItem {
   category: string;
 }
 
-const WorkflowSearch = () => {
+interface WorkflowSearchProps {
+  onWorkflowSelect: (workflowId: string) => void;
+}
+
+const WorkflowSearch = ({ onWorkflowSelect }: WorkflowSearchProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [workflows] = useState<WorkflowItem[]>([
     {
-      id: '1',
+      id: 'add-invoice-xero',
+      name: 'Add Invoice to Xero',
+      description: 'Create and submit invoices directly to Xero accounting system',
+      category: 'Finance',
+    },
+    {
+      id: 'financial-analysis',
       name: 'Financial Analysis',
       description: 'Comprehensive financial data analysis and reporting',
       category: 'Finance',
     },
     {
-      id: '2',
+      id: 'risk-assessment',
       name: 'Risk Assessment',
       description: 'Evaluate and assess potential business risks',
       category: 'Risk Management',
     },
     {
-      id: '3',
-      name: 'Business Planning',
-      description: 'Strategic business planning and forecasting',
-      category: 'Strategy',
-    },
-    {
-      id: '4',
+      id: 'compliance-check',
       name: 'Compliance Check',
       description: 'Regulatory compliance verification and audit',
       category: 'Legal',
-    },
-    {
-      id: '5',
-      name: 'Market Research',
-      description: 'Market analysis and competitive intelligence',
-      category: 'Research',
-    },
+    }
   ]);
 
   const filteredWorkflows = workflows.filter(workflow =>
@@ -69,6 +67,7 @@ const WorkflowSearch = () => {
         {filteredWorkflows.map((workflow) => (
           <div
             key={workflow.id}
+            onClick={() => onWorkflowSelect(workflow.id)}
             className="p-2 rounded-lg hover:bg-capital-blue/5 cursor-pointer border border-transparent hover:border-capital-blue/20 transition-colors"
           >
             <div className="flex items-start gap-2">

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Send, Mic, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -19,7 +19,18 @@ interface Message {
   workflow?: string;
 }
 
-const WorkflowInterface = () => {
+interface WorkflowConfig {
+  value: string;
+  label: string;
+  fields: Array<{
+    name: string;
+    label: string;
+    type: 'select' | 'text';
+    options?: Array<{ value: string; label: string }>;
+  }>;
+}
+
+const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -29,16 +40,130 @@ const WorkflowInterface = () => {
     },
   ]);
   const [inputValue, setInputValue] = useState('');
-  const [selectedWorkflow, setSelectedWorkflow] = useState<string>('');
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string>(selectedWorkflowId || '');
   const [isRecording, setIsRecording] = useState(false);
+  const [workflowFields, setWorkflowFields] = useState<{[key: string]: string}>({});
 
-  const workflows = [
-    { value: 'financial-analysis', label: 'Financial Analysis' },
-    { value: 'risk-assessment', label: 'Risk Assessment' },
-    { value: 'business-planning', label: 'Business Planning' },
-    { value: 'compliance-check', label: 'Compliance Check' },
-    { value: 'market-research', label: 'Market Research' },
+  const workflows: WorkflowConfig[] = [
+    { 
+      value: 'add-invoice-xero', 
+      label: 'Add Invoice to Xero',
+      fields: [
+        {
+          name: 'invoiceType',
+          label: 'Invoice Type',
+          type: 'select',
+          options: [
+            { value: 'sales', label: 'Sales Invoice' },
+            { value: 'purchase', label: 'Purchase Invoice' },
+            { value: 'credit', label: 'Credit Note' }
+          ]
+        },
+        {
+          name: 'supplierName',
+          label: 'Supplier Name',
+          type: 'select',
+          options: [
+            { value: 'acme-corp', label: 'Acme Corporation' },
+            { value: 'tech-solutions', label: 'Tech Solutions Ltd' },
+            { value: 'office-supplies', label: 'Office Supplies Co' }
+          ]
+        },
+        {
+          name: 'amount',
+          label: 'Amount',
+          type: 'text'
+        }
+      ]
+    },
+    { 
+      value: 'financial-analysis', 
+      label: 'Financial Analysis',
+      fields: [
+        {
+          name: 'analysisType',
+          label: 'Analysis Type',
+          type: 'select',
+          options: [
+            { value: 'profit-loss', label: 'Profit & Loss' },
+            { value: 'cash-flow', label: 'Cash Flow' },
+            { value: 'balance-sheet', label: 'Balance Sheet' }
+          ]
+        },
+        {
+          name: 'period',
+          label: 'Period',
+          type: 'select',
+          options: [
+            { value: 'monthly', label: 'Monthly' },
+            { value: 'quarterly', label: 'Quarterly' },
+            { value: 'annual', label: 'Annual' }
+          ]
+        }
+      ]
+    },
+    { 
+      value: 'risk-assessment', 
+      label: 'Risk Assessment',
+      fields: [
+        {
+          name: 'riskCategory',
+          label: 'Risk Category',
+          type: 'select',
+          options: [
+            { value: 'financial', label: 'Financial Risk' },
+            { value: 'operational', label: 'Operational Risk' },
+            { value: 'compliance', label: 'Compliance Risk' }
+          ]
+        },
+        {
+          name: 'severity',
+          label: 'Severity Level',
+          type: 'select',
+          options: [
+            { value: 'low', label: 'Low' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'high', label: 'High' },
+            { value: 'critical', label: 'Critical' }
+          ]
+        }
+      ]
+    },
+    { 
+      value: 'compliance-check', 
+      label: 'Compliance Check',
+      fields: [
+        {
+          name: 'complianceType',
+          label: 'Compliance Type',
+          type: 'select',
+          options: [
+            { value: 'tax', label: 'Tax Compliance' },
+            { value: 'regulatory', label: 'Regulatory Compliance' },
+            { value: 'internal', label: 'Internal Policy' }
+          ]
+        },
+        {
+          name: 'jurisdiction',
+          label: 'Jurisdiction',
+          type: 'select',
+          options: [
+            { value: 'federal', label: 'Federal' },
+            { value: 'state', label: 'State' },
+            { value: 'local', label: 'Local' }
+          ]
+        }
+      ]
+    }
   ];
+
+  React.useEffect(() => {
+    if (selectedWorkflowId) {
+      setSelectedWorkflow(selectedWorkflowId);
+    }
+  }, [selectedWorkflowId]);
+
+  const currentWorkflow = workflows.find(w => w.value === selectedWorkflow);
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -75,7 +200,8 @@ const WorkflowInterface = () => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSendMessage();
     }
   };
@@ -119,6 +245,44 @@ const WorkflowInterface = () => {
             ))}
           </SelectContent>
         </Select>
+
+        {/* Dynamic Workflow Fields */}
+        {currentWorkflow && (
+          <div className="mt-4 space-y-3">
+            {currentWorkflow.fields.map((field) => (
+              <div key={field.name}>
+                <label className="block text-sm font-medium text-capital-dark-blue mb-1">
+                  {field.label}
+                </label>
+                {field.type === 'select' ? (
+                  <Select 
+                    value={workflowFields[field.name] || ''} 
+                    onValueChange={(value) => setWorkflowFields(prev => ({ ...prev, [field.name]: value }))}
+                  >
+                    <SelectTrigger className="w-full border-capital-blue/30">
+                      <SelectValue placeholder={`Select ${field.label.toLowerCase()}...`} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border-capital-blue/30">
+                      {field.options?.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <input
+                    type="text"
+                    value={workflowFields[field.name] || ''}
+                    onChange={(e) => setWorkflowFields(prev => ({ ...prev, [field.name]: e.target.value }))}
+                    placeholder={`Enter ${field.label.toLowerCase()}...`}
+                    className="w-full px-3 py-2 border border-capital-blue/30 rounded-md focus:outline-none focus:ring-2 focus:ring-capital-blue focus:border-transparent"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Messages Area */}
@@ -156,14 +320,15 @@ const WorkflowInterface = () => {
             Please select a workflow above to continue
           </div>
         )}
-        <div className="flex gap-2">
-          <Input
+        <div className="flex gap-2 items-end">
+          <Textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={selectedWorkflow ? "Describe your workflow requirements..." : "Select a workflow first..."}
             disabled={!selectedWorkflow}
-            className="flex-1 border-capital-blue/30 focus:border-capital-blue disabled:opacity-50"
+            className="flex-1 border-capital-blue/30 focus:border-capital-blue disabled:opacity-50 resize-none min-h-[40px] max-h-[120px]"
+            rows={1}
           />
           <Button
             onClick={handleFileUpload}

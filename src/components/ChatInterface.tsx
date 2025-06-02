@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Send, Mic, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -65,7 +65,8 @@ const ChatInterface = () => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSendMessage();
     }
   };
@@ -144,13 +145,14 @@ const ChatInterface = () => {
             </div>
 
             <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-capital-light-blue/30">
-              <div className="flex gap-2">
-                <Input
+              <div className="flex gap-2 items-end">
+                <Textarea
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask anything"
-                  className="flex-1 border-capital-blue/30 focus:border-capital-blue"
+                  className="flex-1 border-capital-blue/30 focus:border-capital-blue resize-none min-h-[40px] max-h-[120px]"
+                  rows={1}
                 />
                 <Button
                   onClick={handleFileUpload}
@@ -211,13 +213,14 @@ const ChatInterface = () => {
 
       {/* Input Area */}
       <div className="border-t border-capital-light-blue/30 p-4 bg-white">
-        <div className="flex gap-2">
-          <Input
+        <div className="flex gap-2 items-end">
+          <Textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your message here..."
-            className="flex-1 border-capital-blue/30 focus:border-capital-blue"
+            className="flex-1 border-capital-blue/30 focus:border-capital-blue resize-none min-h-[40px] max-h-[120px]"
+            rows={1}
           />
           <Button
             onClick={handleFileUpload}

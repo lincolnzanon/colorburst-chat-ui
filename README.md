@@ -1,8 +1,11 @@
+
 # Welcome to your Lovable project
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/a67f07d1-065f-47d8-9881-8933b06e9435
+
+**GitHub Repository**: https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME
 
 ## How can I edit this code?
 
@@ -24,10 +27,10 @@ Follow these steps:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
 
 # Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+cd YOUR_PROJECT_NAME
 
 # Step 3: Install the necessary dependencies.
 npm i
@@ -62,7 +65,7 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/a67f07d1-065f-47d8-9881-8933b06e9435) and click on Share -> Publish.
+Simply open [Lovable](https://lovable.dev/projects/a67f07d1-065f-47d8-9881-8933b06e9435) and click on Share → Publish.
 
 ## Can I connect a custom domain to my Lovable project?
 
