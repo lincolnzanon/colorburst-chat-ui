@@ -1,8 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -10,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { companyConfig } from '@/config/company';
 
 interface Message {
   id: string;
@@ -24,20 +24,15 @@ const ChatInterface = () => {
   const [searchType, setSearchType] = useState('');
   const [clientName, setClientName] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const searchOptions = [
-    { value: 'client', label: 'my client' },
-    { value: 'company', label: 'my company' },
-    { value: 'financials', label: 'my financials' },
-    { value: 'crm', label: 'my crm' },
-  ];
-
-  const clientOptions = [
-    { value: 'acme-corp', label: 'Acme Corporation' },
-    { value: 'tech-solutions', label: 'Tech Solutions Ltd' },
-    { value: 'global-industries', label: 'Global Industries' },
-    { value: 'startup-inc', label: 'Startup Inc' },
-  ];
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [inputValue]);
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -73,11 +68,9 @@ const ChatInterface = () => {
 
   const handleMicrophoneToggle = () => {
     setIsRecording(!isRecording);
-    // Here you would implement actual voice recording functionality
   };
 
   const handleFileUpload = () => {
-    // Here you would implement file upload functionality
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '*/*';
@@ -85,7 +78,6 @@ const ChatInterface = () => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         console.log('File selected:', file.name);
-        // Handle file upload here
       }
     };
     input.click();
@@ -105,7 +97,7 @@ const ChatInterface = () => {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-6 max-w-md">
             <h2 className="text-3xl font-medium text-gray-800">
-              {getGreeting()} Tony
+              {getGreeting()} {companyConfig.greeting.userName}
             </h2>
             
             <div className="space-y-4">
@@ -116,7 +108,7 @@ const ChatInterface = () => {
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-capital-blue/30">
-                    {searchOptions.map((option) => (
+                    {companyConfig.searchOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -133,7 +125,7 @@ const ChatInterface = () => {
                       <SelectValue placeholder="Select client..." />
                     </SelectTrigger>
                     <SelectContent className="bg-white border-capital-blue/30">
-                      {clientOptions.map((client) => (
+                      {companyConfig.clients.map((client) => (
                         <SelectItem key={client.value} value={client.value}>
                           {client.label}
                         </SelectItem>
@@ -144,14 +136,16 @@ const ChatInterface = () => {
               )}
             </div>
 
-            <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-capital-light-blue/30">
+            {/* Full width input area */}
+            <div className="w-full max-w-4xl mt-8 p-4 bg-gray-50 rounded-lg border border-capital-light-blue/30">
               <div className="flex gap-2 items-end">
-                <Textarea
+                <textarea
+                  ref={textareaRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask anything"
-                  className="flex-1 border-capital-blue/30 focus:border-capital-blue resize-none min-h-[40px] max-h-[120px]"
+                  className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] overflow-y-auto"
                   rows={1}
                 />
                 <Button
@@ -211,15 +205,16 @@ const ChatInterface = () => {
         ))}
       </div>
 
-      {/* Input Area */}
+      {/* Input Area - Full Width */}
       <div className="border-t border-capital-light-blue/30 p-4 bg-white">
         <div className="flex gap-2 items-end">
-          <Textarea
+          <textarea
+            ref={textareaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your message here..."
-            className="flex-1 border-capital-blue/30 focus:border-capital-blue resize-none min-h-[40px] max-h-[120px]"
+            className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] overflow-y-auto"
             rows={1}
           />
           <Button

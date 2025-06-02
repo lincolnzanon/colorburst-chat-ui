@@ -1,8 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -10,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { workflows, getWorkflowById } from '@/workflows';
 
 interface Message {
   id: string;
@@ -17,17 +17,6 @@ interface Message {
   sender: 'user' | 'assistant';
   timestamp: Date;
   workflow?: string;
-}
-
-interface WorkflowConfig {
-  value: string;
-  label: string;
-  fields: Array<{
-    name: string;
-    label: string;
-    type: 'select' | 'text';
-    options?: Array<{ value: string; label: string }>;
-  }>;
 }
 
 const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string }) => {
@@ -43,119 +32,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>(selectedWorkflowId || '');
   const [isRecording, setIsRecording] = useState(false);
   const [workflowFields, setWorkflowFields] = useState<{[key: string]: string}>({});
-
-  const workflows: WorkflowConfig[] = [
-    { 
-      value: 'add-invoice-xero', 
-      label: 'Add Invoice to Xero',
-      fields: [
-        {
-          name: 'invoiceType',
-          label: 'Invoice Type',
-          type: 'select',
-          options: [
-            { value: 'sales', label: 'Sales Invoice' },
-            { value: 'purchase', label: 'Purchase Invoice' },
-            { value: 'credit', label: 'Credit Note' }
-          ]
-        },
-        {
-          name: 'supplierName',
-          label: 'Supplier Name',
-          type: 'select',
-          options: [
-            { value: 'acme-corp', label: 'Acme Corporation' },
-            { value: 'tech-solutions', label: 'Tech Solutions Ltd' },
-            { value: 'office-supplies', label: 'Office Supplies Co' }
-          ]
-        },
-        {
-          name: 'amount',
-          label: 'Amount',
-          type: 'text'
-        }
-      ]
-    },
-    { 
-      value: 'financial-analysis', 
-      label: 'Financial Analysis',
-      fields: [
-        {
-          name: 'analysisType',
-          label: 'Analysis Type',
-          type: 'select',
-          options: [
-            { value: 'profit-loss', label: 'Profit & Loss' },
-            { value: 'cash-flow', label: 'Cash Flow' },
-            { value: 'balance-sheet', label: 'Balance Sheet' }
-          ]
-        },
-        {
-          name: 'period',
-          label: 'Period',
-          type: 'select',
-          options: [
-            { value: 'monthly', label: 'Monthly' },
-            { value: 'quarterly', label: 'Quarterly' },
-            { value: 'annual', label: 'Annual' }
-          ]
-        }
-      ]
-    },
-    { 
-      value: 'risk-assessment', 
-      label: 'Risk Assessment',
-      fields: [
-        {
-          name: 'riskCategory',
-          label: 'Risk Category',
-          type: 'select',
-          options: [
-            { value: 'financial', label: 'Financial Risk' },
-            { value: 'operational', label: 'Operational Risk' },
-            { value: 'compliance', label: 'Compliance Risk' }
-          ]
-        },
-        {
-          name: 'severity',
-          label: 'Severity Level',
-          type: 'select',
-          options: [
-            { value: 'low', label: 'Low' },
-            { value: 'medium', label: 'Medium' },
-            { value: 'high', label: 'High' },
-            { value: 'critical', label: 'Critical' }
-          ]
-        }
-      ]
-    },
-    { 
-      value: 'compliance-check', 
-      label: 'Compliance Check',
-      fields: [
-        {
-          name: 'complianceType',
-          label: 'Compliance Type',
-          type: 'select',
-          options: [
-            { value: 'tax', label: 'Tax Compliance' },
-            { value: 'regulatory', label: 'Regulatory Compliance' },
-            { value: 'internal', label: 'Internal Policy' }
-          ]
-        },
-        {
-          name: 'jurisdiction',
-          label: 'Jurisdiction',
-          type: 'select',
-          options: [
-            { value: 'federal', label: 'Federal' },
-            { value: 'state', label: 'State' },
-            { value: 'local', label: 'Local' }
-          ]
-        }
-      ]
-    }
-  ];
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   React.useEffect(() => {
     if (selectedWorkflowId) {
@@ -163,7 +40,15 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
     }
   }, [selectedWorkflowId]);
 
-  const currentWorkflow = workflows.find(w => w.value === selectedWorkflow);
+  const currentWorkflow = getWorkflowById(selectedWorkflow);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [inputValue]);
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -183,9 +68,8 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
     setTimeout(() => {
       let responseContent = 'I\'m processing your request...';
       
-      if (selectedWorkflow) {
-        const workflowLabel = workflows.find(w => w.value === selectedWorkflow)?.label;
-        responseContent = `I'm analyzing your ${workflowLabel} request. Let me help you with the next steps in this workflow.`;
+      if (selectedWorkflow && currentWorkflow) {
+        responseContent = `I'm analyzing your ${currentWorkflow.name} request. Let me help you with the next steps in this workflow.`;
       }
 
       const aiResponse: Message = {
@@ -208,11 +92,9 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
 
   const handleMicrophoneToggle = () => {
     setIsRecording(!isRecording);
-    // Here you would implement actual voice recording functionality
   };
 
   const handleFileUpload = () => {
-    // Here you would implement file upload functionality
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '*/*';
@@ -220,7 +102,6 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         console.log('File selected:', file.name);
-        // Handle file upload here
       }
     };
     input.click();
@@ -239,8 +120,8 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
           </SelectTrigger>
           <SelectContent className="bg-white border-capital-blue/30">
             {workflows.map((workflow) => (
-              <SelectItem key={workflow.value} value={workflow.value}>
-                {workflow.label}
+              <SelectItem key={workflow.id} value={workflow.id}>
+                {workflow.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -299,9 +180,9 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
                   : 'bg-gray-100 text-gray-800 border border-capital-light-blue/30'
               }`}
             >
-              {message.workflow && message.sender === 'user' && (
+              {message.workflow && message.sender === 'user' && currentWorkflow && (
                 <div className="text-xs opacity-70 mb-1">
-                  Workflow: {workflows.find(w => w.value === message.workflow)?.label}
+                  Workflow: {currentWorkflow.name}
                 </div>
               )}
               <p className="text-sm">{message.content}</p>
@@ -313,7 +194,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
         ))}
       </div>
 
-      {/* Input Area */}
+      {/* Input Area - Full Width */}
       <div className="border-t border-capital-light-blue/30 p-4 bg-white">
         {!selectedWorkflow && (
           <div className="mb-2 text-sm text-capital-yellow bg-capital-yellow/10 p-2 rounded border border-capital-yellow/30">
@@ -321,13 +202,14 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
           </div>
         )}
         <div className="flex gap-2 items-end">
-          <Textarea
+          <textarea
+            ref={textareaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={selectedWorkflow ? "Describe your workflow requirements..." : "Select a workflow first..."}
             disabled={!selectedWorkflow}
-            className="flex-1 border-capital-blue/30 focus:border-capital-blue disabled:opacity-50 resize-none min-h-[40px] max-h-[120px]"
+            className="flex-1 border border-capital-blue/30 focus:border-capital-blue disabled:opacity-50 resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] overflow-y-auto"
             rows={1}
           />
           <Button

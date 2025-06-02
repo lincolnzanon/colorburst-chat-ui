@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { MessageSquare, Workflow } from 'lucide-react';
+import { MessageSquare, Workflow, Bell } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -16,13 +16,16 @@ import WorkflowSearch from './WorkflowSearch';
 import WorkflowHistory from './WorkflowHistory';
 
 interface AppSidebarProps {
-  activeView: 'chat' | 'workflows';
-  onViewChange: (view: 'chat' | 'workflows') => void;
+  activeView: 'chat' | 'workflows' | 'reminders';
+  onViewChange: (view: 'chat' | 'workflows' | 'reminders') => void;
   onWorkflowSelect?: (workflowId: string) => void;
 }
 
 const AppSidebar = ({ activeView, onViewChange, onWorkflowSelect }: AppSidebarProps) => {
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>('');
+  
+  // Mock reminder count - in real app this would come from a data source
+  const reminderCount = 5;
 
   const menuItems = [
     {
@@ -34,6 +37,12 @@ const AppSidebar = ({ activeView, onViewChange, onWorkflowSelect }: AppSidebarPr
       title: "Workflows",
       icon: Workflow,
       view: 'workflows' as const,
+    },
+    {
+      title: "Reminders",
+      icon: Bell,
+      view: 'reminders' as const,
+      badge: reminderCount,
     },
   ];
 
@@ -70,6 +79,11 @@ const AppSidebar = ({ activeView, onViewChange, onWorkflowSelect }: AppSidebarPr
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
+                    {item.badge && (
+                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                        {item.badge}
+                      </span>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
