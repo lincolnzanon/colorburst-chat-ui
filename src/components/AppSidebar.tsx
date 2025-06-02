@@ -11,6 +11,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import ChatHistory from './ChatHistory';
+import WorkflowSearch from './WorkflowSearch';
 
 interface AppSidebarProps {
   activeView: 'chat' | 'workflows';
@@ -58,6 +60,19 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Conditional content based on active view */}
+        {activeView === 'chat' && (
+          <SidebarGroup>
+            <ChatHistory />
+          </SidebarGroup>
+        )}
+
+        {activeView === 'workflows' && (
+          <SidebarGroup>
+            <WorkflowSearch />
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );

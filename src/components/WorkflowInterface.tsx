@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Send, ChevronDown } from 'lucide-react';
+import { Send, Mic, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -30,6 +30,7 @@ const WorkflowInterface = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>('');
+  const [isRecording, setIsRecording] = useState(false);
 
   const workflows = [
     { value: 'financial-analysis', label: 'Financial Analysis' },
@@ -77,6 +78,26 @@ const WorkflowInterface = () => {
     if (e.key === 'Enter') {
       handleSendMessage();
     }
+  };
+
+  const handleMicrophoneToggle = () => {
+    setIsRecording(!isRecording);
+    // Here you would implement actual voice recording functionality
+  };
+
+  const handleFileUpload = () => {
+    // Here you would implement file upload functionality
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '*/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        console.log('File selected:', file.name);
+        // Handle file upload here
+      }
+    };
+    input.click();
   };
 
   return (
@@ -144,6 +165,26 @@ const WorkflowInterface = () => {
             disabled={!selectedWorkflow}
             className="flex-1 border-capital-blue/30 focus:border-capital-blue disabled:opacity-50"
           />
+          <Button
+            onClick={handleFileUpload}
+            variant="outline"
+            size="icon"
+            disabled={!selectedWorkflow}
+            className="border-capital-blue/30 hover:bg-capital-blue/10 disabled:opacity-50"
+          >
+            <Upload className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={handleMicrophoneToggle}
+            variant="outline"
+            size="icon"
+            disabled={!selectedWorkflow}
+            className={`border-capital-blue/30 disabled:opacity-50 ${
+              isRecording ? 'bg-red-100 text-red-600' : 'hover:bg-capital-blue/10'
+            }`}
+          >
+            <Mic className="h-4 w-4" />
+          </Button>
           <Button
             onClick={handleSendMessage}
             disabled={!selectedWorkflow}
