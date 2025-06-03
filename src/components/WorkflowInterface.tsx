@@ -127,6 +127,13 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
           </SelectContent>
         </Select>
 
+        {/* Show original workflow name if different from display */}
+        {currentWorkflow && (
+          <div className="mt-2 text-xs text-capital-blue/70">
+            Original: {currentWorkflow.name}
+          </div>
+        )}
+
         {/* Dynamic Workflow Fields */}
         {currentWorkflow && (
           <div className="mt-4 space-y-3">
@@ -195,7 +202,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
       </div>
 
       {/* Input Area - Full Width */}
-      <div className="border-t border-capital-light-blue/30 p-4 bg-white">
+      <div className="w-full border-t border-capital-light-blue/30 p-6 bg-white">
         {!selectedWorkflow && (
           <div className="mb-2 text-sm text-capital-yellow bg-capital-yellow/10 p-2 rounded border border-capital-yellow/30">
             Please select a workflow above to continue
@@ -209,7 +216,8 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
             onKeyPress={handleKeyPress}
             placeholder={selectedWorkflow ? "Describe your workflow requirements..." : "Select a workflow first..."}
             disabled={!selectedWorkflow}
-            className="flex-1 border border-capital-blue/30 focus:border-capital-blue disabled:opacity-50 resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] overflow-y-auto"
+            className="flex-1 border border-capital-blue/30 focus:border-capital-blue disabled:opacity-50 resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px]"
+            style={{ overflowY: inputValue.split('\n').length > 5 ? 'auto' : 'hidden' }}
             rows={1}
           />
           <Button

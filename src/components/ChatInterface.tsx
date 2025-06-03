@@ -95,13 +95,13 @@ const ChatInterface = () => {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-6 max-w-md">
+          <div className="text-center space-y-6 w-full max-w-4xl px-4">
             <h2 className="text-3xl font-medium text-gray-800">
               {getGreeting()} {companyConfig.greeting.userName}
             </h2>
             
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
+            <div className="w-full space-y-4">
+              <div className="flex items-center justify-center gap-2">
                 <span className="text-gray-600">I want to search</span>
                 <Select value={searchType} onValueChange={setSearchType}>
                   <SelectTrigger className="w-32 border-capital-blue/30">
@@ -118,7 +118,7 @@ const ChatInterface = () => {
               </div>
 
               {searchType === 'client' && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <span className="text-gray-600">I want to search my client</span>
                   <Select value={clientName} onValueChange={setClientName}>
                     <SelectTrigger className="w-48 border-capital-blue/30">
@@ -135,45 +135,46 @@ const ChatInterface = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
 
-            {/* Full width input area */}
-            <div className="w-full max-w-4xl mt-8 p-4 bg-gray-50 rounded-lg border border-capital-light-blue/30">
-              <div className="flex gap-2 items-end">
-                <textarea
-                  ref={textareaRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask anything"
-                  className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] overflow-y-auto"
-                  rows={1}
-                />
-                <Button
-                  onClick={handleFileUpload}
-                  variant="outline"
-                  size="icon"
-                  className="border-capital-blue/30 hover:bg-capital-blue/10"
-                >
-                  <Upload className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={handleMicrophoneToggle}
-                  variant="outline"
-                  size="icon"
-                  className={`border-capital-blue/30 ${
-                    isRecording ? 'bg-red-100 text-red-600' : 'hover:bg-capital-blue/10'
-                  }`}
-                >
-                  <Mic className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={handleSendMessage}
-                  className="bg-capital-blue hover:bg-capital-dark-blue text-white"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+        {/* Full width input area at bottom */}
+        <div className="w-full p-6 bg-gray-50 border-t border-capital-light-blue/30">
+          <div className="flex gap-2 items-end max-w-full">
+            <textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask anything"
+              className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px]"
+              style={{ overflowY: inputValue.split('\n').length > 5 ? 'auto' : 'hidden' }}
+              rows={1}
+            />
+            <Button
+              onClick={handleFileUpload}
+              variant="outline"
+              size="icon"
+              className="border-capital-blue/30 hover:bg-capital-blue/10"
+            >
+              <Upload className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={handleMicrophoneToggle}
+              variant="outline"
+              size="icon"
+              className={`border-capital-blue/30 ${
+                isRecording ? 'bg-red-100 text-red-600' : 'hover:bg-capital-blue/10'
+              }`}
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={handleSendMessage}
+              className="bg-capital-blue hover:bg-capital-dark-blue text-white"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -206,7 +207,7 @@ const ChatInterface = () => {
       </div>
 
       {/* Input Area - Full Width */}
-      <div className="border-t border-capital-light-blue/30 p-4 bg-white">
+      <div className="w-full border-t border-capital-light-blue/30 p-6 bg-white">
         <div className="flex gap-2 items-end">
           <textarea
             ref={textareaRef}
@@ -214,7 +215,8 @@ const ChatInterface = () => {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your message here..."
-            className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] overflow-y-auto"
+            className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px]"
+            style={{ overflowY: inputValue.split('\n').length > 5 ? 'auto' : 'hidden' }}
             rows={1}
           />
           <Button

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { MessageSquare, Workflow, Bell } from 'lucide-react';
+import { MessageSquare, Workflow, Bell, Settings } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -10,10 +10,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import ChatHistory from './ChatHistory';
 import WorkflowSearch from './WorkflowSearch';
 import WorkflowHistory from './WorkflowHistory';
+import SettingsDialog from './SettingsDialog';
 
 interface AppSidebarProps {
   activeView: 'chat' | 'workflows' | 'reminders';
@@ -23,6 +25,7 @@ interface AppSidebarProps {
 
 const AppSidebar = ({ activeView, onViewChange, onWorkflowSelect }: AppSidebarProps) => {
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Mock reminder count - in real app this would come from a data source
   const reminderCount = 5;
@@ -54,62 +57,79 @@ const AppSidebar = ({ activeView, onViewChange, onWorkflowSelect }: AppSidebarPr
   };
 
   return (
-    <Sidebar className="border-r border-capital-light-blue/30">
-      <SidebarContent className="bg-gradient-to-b from-capital-blue/5 to-capital-light-blue/10">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-capital-dark-blue font-semibold">
-            Navigation
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    onClick={() => {
-                      onViewChange(item.view);
-                      if (item.view === 'chat') {
-                        setSelectedWorkflow('');
-                      }
-                    }}
-                    className={`transition-colors duration-200 ${
-                      activeView === item.view 
-                        ? 'bg-capital-blue text-white hover:bg-capital-dark-blue' 
-                        : 'text-capital-dark-blue hover:bg-capital-blue/10'
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                    {item.badge && (
-                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                        {item.badge}
-                      </span>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Conditional content based on active view */}
-        {activeView === 'chat' && (
+    <>
+      <Sidebar className="border-r border-capital-light-blue/30">
+        <SidebarContent className="bg-gradient-to-b from-capital-blue/5 to-capital-light-blue/10">
           <SidebarGroup>
-            <ChatHistory />
+            <SidebarGroupLabel className="text-capital-dark-blue font-semibold">
+              Navigation
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      onClick={() => {
+                        onViewChange(item.view);
+                        if (item.view === 'chat') {
+                          setSelectedWorkflow('');
+                        }
+                      }}
+                      className={`transition-colors duration-200 ${
+                        activeView === item.view 
+                          ? 'bg-capital-blue text-white hover:bg-capital-dark-blue' 
+                          : 'text-capital-dark-blue hover:bg-capital-blue/10'
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                      {item.badge && (
+                        <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                          {item.badge}
+                        </span>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
           </SidebarGroup>
-        )}
 
-        {activeView === 'workflows' && (
-          <>
+          {/* Conditional content based on active view */}
+          {activeView === 'chat' && (
             <SidebarGroup>
-              <WorkflowSearch onWorkflowSelect={handleWorkflowSelect} />
+              <ChatHistory />
             </SidebarGroup>
-            <SidebarGroup>
-              <WorkflowHistory selectedWorkflow={selectedWorkflow} />
-            </SidebarGroup>
-          </>
-        )}
-      </SidebarContent>
-    </Sidebar>
+          )}
+
+          {activeView === 'workflows' && (
+            <>
+              <SidebarGroup>
+                <WorkflowSearch onWorkflowSelect={handleWorkflowSelect} />
+              </SidebarGroup>
+              <SidebarGroup>
+                <WorkflowHistory selectedWorkflow={selectedWorkflow} />
+              </SidebarGroup>
+            </>
+          )}
+        </SidebarContent>
+        
+        <SidebarFooter className="p-2">
+          <SidebarMenuButton 
+            onClick={() => setIsSettingsOpen(true)}
+            className="text-capital-dark-blue hover:bg-capital-blue/10 justify-start"
+          >
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
+          </SidebarMenuButton>
+        </SidebarFooter>
+      </Sidebar>
+
+      <SettingsDialog 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+      />
+    </>
   );
 };
 

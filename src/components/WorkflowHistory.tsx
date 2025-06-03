@@ -1,11 +1,13 @@
 
-import React from 'react';
-import { MessageSquare, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { MessageSquare, Trash2, Edit2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface WorkflowHistoryItem {
   id: string;
   title: string;
+  customTitle?: string;
   workflowName: string;
   lastMessage: string;
   timestamp: Date;
@@ -16,7 +18,7 @@ interface WorkflowHistoryProps {
 }
 
 const WorkflowHistory = ({ selectedWorkflow }: WorkflowHistoryProps) => {
-  const [workflowHistory] = React.useState<WorkflowHistoryItem[]>([
+  const [workflowHistory, setWorkflowHistory] = useState<WorkflowHistoryItem[]>([
     {
       id: '1',
       title: 'Invoice for Office Supplies',
@@ -45,7 +47,24 @@ const WorkflowHistory = ({ selectedWorkflow }: WorkflowHistoryProps) => {
       lastMessage: 'Processed invoice for consulting services',
       timestamp: new Date(Date.now() - 172800000), // 2 days ago
     },
+    {
+      id: '5',
+      title: 'Risk Assessment Report',
+      workflowName: 'risk-assessment',
+      lastMessage: 'Completed risk analysis for new client',
+      timestamp: new Date(Date.now() - 259200000), // 3 days ago
+    },
+    {
+      id: '6',
+      title: 'Monthly Financial Summary',
+      workflowName: 'financial-analysis',
+      lastMessage: 'Generated monthly financial overview',
+      timestamp: new Date(Date.now() - 345600000), // 4 days ago
+    },
   ]);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   const workflowNames: {[key: string]: string} = {
     'add-invoice-xero': 'Add Invoice to Xero',
@@ -62,6 +81,32 @@ const WorkflowHistory = ({ selectedWorkflow }: WorkflowHistoryProps) => {
     if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays}d ago`;
+  };
+
+  const handleStartEdit = (id: string, currentTitle: string) => {
+    setEditingId(id);
+    setEditValue(currentTitle);
+  };
+
+  const handleSaveEdit = (id: string) => {
+    setWorkflowHistory(prev => 
+      prev.map(item => 
+        item.id === id 
+          ? { ...item, customTitle: editValue.trim() || item.title }
+          : item
+      )
+    );
+    setEditingId(null);
+    setEditValue('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditValue('');
+  };
+
+  const handleDelete = (id: string) => {
+    setWorkflowHistory(prev => prev.filter(item => item.id !== id));
   };
 
   const filteredHistory = selectedWorkflow 
@@ -81,9 +126,36 @@ const WorkflowHistory = ({ selectedWorkflow }: WorkflowHistoryProps) => {
           <div className="flex items-start gap-2">
             <MessageSquare className="h-4 w-4 text-capital-blue mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-capital-dark-blue truncate">
-                {item.title}
-              </p>
+              {editingId === item.id ? (
+                <div className="flex items-center gap-1 mb-1">
+                  <Input
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="text-xs h-6 px-2"
+                    onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit(item.id)}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    onClick={() => handleSaveEdit(item.id)}
+                  >
+                    <Check className="h-3 w-3 text-green-600" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    onClick={handleCancelEdit}
+                  >
+                    <X className="h-3 w-3 text-red-600" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs font-medium text-capital-dark-blue truncate">
+                  {item.customTitle || item.title}
+                </p>
+              )}
               {!selectedWorkflow && (
                 <p className="text-xs text-capital-blue/70 truncate">
                   {workflowNames[item.workflowName]}
@@ -96,13 +168,24 @@ const WorkflowHistory = ({ selectedWorkflow }: WorkflowHistoryProps) => {
                 {formatTimestamp(item.timestamp)}
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-gray-400 hover:text-red-500 hover:bg-red-50"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            <div className="flex flex-col gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 text-gray-400 hover:text-blue-500"
+                onClick={() => handleStartEdit(item.id, item.customTitle || item.title)}
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                onClick={() => handleDelete(item.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
         </div>
       ))}
