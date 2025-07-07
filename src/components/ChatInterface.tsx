@@ -34,7 +34,49 @@ const ChatInterface = () => {
     }
   }, [inputValue]);
 
-  const handleSendMessage = () => {
+  const sendWebhookRequest = async (searchType: string, clientName: string, query: string) => {
+    const webhookData = {
+      searchType,
+      clientName,
+      query,
+      timestamp: new Date().toISOString(),
+      userId: 'demo-user-123'
+    };
+
+    // Simulate different API endpoints based on search type
+    const webhookUrls = {
+      client: 'https://api.example.com/webhooks/client-search',
+      company: 'https://api.example.com/webhooks/company-search', 
+      financials: 'https://api.example.com/webhooks/financial-search',
+      crm: 'https://api.example.com/webhooks/crm-search'
+    };
+
+    const webhookUrl = webhookUrls[searchType as keyof typeof webhookUrls];
+    
+    console.log('Sending webhook request to:', webhookUrl);
+    console.log('Webhook data:', webhookData);
+
+    try {
+      // In a real application, this would be an actual API call
+      // For now, we'll simulate the request
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData),
+        mode: 'no-cors' // For demo purposes
+      });
+
+      console.log('Webhook sent successfully');
+      return { success: true, data: webhookData };
+    } catch (error) {
+      console.error('Webhook request failed:', error);
+      return { success: false, error };
+    }
+  };
+
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     const newMessage: Message = {
@@ -45,13 +87,33 @@ const ChatInterface = () => {
     };
 
     setMessages(prev => [...prev, newMessage]);
+
+    // Send webhook request if search type is selected
+    if (searchType) {
+      await sendWebhookRequest(searchType, clientName, inputValue);
+    }
+
     setInputValue('');
 
     // Simulate AI response
     setTimeout(() => {
+      let responseContent = 'Thank you for your message. I\'m here to assist you with your consulting needs.';
+      
+      if (searchType) {
+        const searchLabel = companyConfig.searchOptions.find(opt => opt.value === searchType)?.label || searchType;
+        responseContent = `I've processed your ${searchLabel} search request and sent it to our backend systems for analysis. `;
+        
+        if (clientName) {
+          const clientLabel = companyConfig.clients.find(client => client.value === clientName)?.label || clientName;
+          responseContent += `The search is specifically for ${clientLabel}. `;
+        }
+        
+        responseContent += 'You should receive the results shortly.';
+      }
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'Thank you for your message. I\'m here to assist you with your consulting needs.',
+        content: responseContent,
         sender: 'assistant',
         timestamp: new Date(),
       };
@@ -96,18 +158,18 @@ const ChatInterface = () => {
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-6 w-full max-w-4xl px-4">
-            <h2 className="text-3xl font-medium text-gray-800">
+            <h2 className="text-3xl font-medium text-gray-800 dark:text-white">
               {getGreeting()} {companyConfig.greeting.userName}
             </h2>
             
             <div className="w-full space-y-4">
               <div className="flex items-center justify-center gap-2">
-                <span className="text-gray-600">I want to search</span>
+                <span className="text-gray-600 dark:text-gray-300">I want to search</span>
                 <Select value={searchType} onValueChange={setSearchType}>
-                  <SelectTrigger className="w-32 border-capital-blue/30">
+                  <SelectTrigger className="w-32 border-capital-blue/30 dark:border-gray-600">
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-capital-blue/30">
+                  <SelectContent className="bg-white border-capital-blue/30 dark:bg-gray-800 dark:border-gray-600">
                     {companyConfig.searchOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -119,12 +181,12 @@ const ChatInterface = () => {
 
               {searchType === 'client' && (
                 <div className="flex items-center justify-center gap-2">
-                  <span className="text-gray-600">I want to search my client</span>
+                  <span className="text-gray-600 dark:text-gray-300">I want to search my client</span>
                   <Select value={clientName} onValueChange={setClientName}>
-                    <SelectTrigger className="w-48 border-capital-blue/30">
+                    <SelectTrigger className="w-48 border-capital-blue/30 dark:border-gray-600">
                       <SelectValue placeholder="Select client..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-capital-blue/30">
+                    <SelectContent className="bg-white border-capital-blue/30 dark:bg-gray-800 dark:border-gray-600">
                       {companyConfig.clients.map((client) => (
                         <SelectItem key={client.value} value={client.value}>
                           {client.label}
@@ -139,7 +201,7 @@ const ChatInterface = () => {
         </div>
 
         {/* Full width input area at bottom */}
-        <div className="w-full p-6 bg-gray-50 border-t border-capital-light-blue/30">
+        <div className="w-full p-6 bg-gray-50 border-t border-capital-light-blue/30 dark:bg-gray-900 dark:border-gray-600">
           <div className="flex gap-2 items-end max-w-full">
             <textarea
               ref={textareaRef}
@@ -147,7 +209,7 @@ const ChatInterface = () => {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask anything"
-              className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px]"
+              className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] dark:border-gray-600 dark:bg-gray-800 dark:text-white"
               style={{ overflowY: inputValue.split('\n').length > 5 ? 'auto' : 'hidden' }}
               rows={1}
             />
@@ -155,7 +217,7 @@ const ChatInterface = () => {
               onClick={handleFileUpload}
               variant="outline"
               size="icon"
-              className="border-capital-blue/30 hover:bg-capital-blue/10"
+              className="border-capital-blue/30 hover:bg-capital-blue/10 dark:border-gray-600 dark:hover:bg-gray-700"
             >
               <Upload className="h-4 w-4" />
             </Button>
@@ -163,8 +225,8 @@ const ChatInterface = () => {
               onClick={handleMicrophoneToggle}
               variant="outline"
               size="icon"
-              className={`border-capital-blue/30 ${
-                isRecording ? 'bg-red-100 text-red-600' : 'hover:bg-capital-blue/10'
+              className={`border-capital-blue/30 dark:border-gray-600 ${
+                isRecording ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400' : 'hover:bg-capital-blue/10 dark:hover:bg-gray-700'
               }`}
             >
               <Mic className="h-4 w-4" />
@@ -194,7 +256,7 @@ const ChatInterface = () => {
               className={`max-w-[70%] rounded-lg px-4 py-2 ${
                 message.sender === 'user'
                   ? 'bg-capital-blue text-white'
-                  : 'bg-gray-100 text-gray-800 border border-capital-light-blue/30'
+                  : 'bg-gray-100 text-gray-800 border border-capital-light-blue/30 dark:bg-gray-800 dark:text-white dark:border-gray-600'
               }`}
             >
               <p className="text-sm">{message.content}</p>
@@ -207,7 +269,7 @@ const ChatInterface = () => {
       </div>
 
       {/* Input Area - Full Width */}
-      <div className="w-full border-t border-capital-light-blue/30 p-6 bg-white">
+      <div className="w-full border-t border-capital-light-blue/30 p-6 bg-white dark:bg-gray-900 dark:border-gray-600">
         <div className="flex gap-2 items-end">
           <textarea
             ref={textareaRef}
@@ -215,7 +277,7 @@ const ChatInterface = () => {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your message here..."
-            className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px]"
+            className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] dark:border-gray-600 dark:bg-gray-800 dark:text-white"
             style={{ overflowY: inputValue.split('\n').length > 5 ? 'auto' : 'hidden' }}
             rows={1}
           />
@@ -223,7 +285,7 @@ const ChatInterface = () => {
             onClick={handleFileUpload}
             variant="outline"
             size="icon"
-            className="border-capital-blue/30 hover:bg-capital-blue/10"
+            className="border-capital-blue/30 hover:bg-capital-blue/10 dark:border-gray-600 dark:hover:bg-gray-700"
           >
             <Upload className="h-4 w-4" />
           </Button>
@@ -231,8 +293,8 @@ const ChatInterface = () => {
             onClick={handleMicrophoneToggle}
             variant="outline"
             size="icon"
-            className={`border-capital-blue/30 ${
-              isRecording ? 'bg-red-100 text-red-600' : 'hover:bg-capital-blue/10'
+            className={`border-capital-blue/30 dark:border-gray-600 ${
+              isRecording ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400' : 'hover:bg-capital-blue/10 dark:hover:bg-gray-700'
             }`}
           >
             <Mic className="h-4 w-4" />

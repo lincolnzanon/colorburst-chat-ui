@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Upload } from 'lucide-react';
+import { Send, Mic, Upload, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { workflows, getWorkflowById } from '@/workflows';
+import AddWorkflowDialog from './AddWorkflowDialog';
 
 interface Message {
   id: string;
@@ -32,6 +33,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>(selectedWorkflowId || '');
   const [isRecording, setIsRecording] = useState(false);
   const [workflowFields, setWorkflowFields] = useState<{[key: string]: string}>({});
+  const [isAddWorkflowOpen, setIsAddWorkflowOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   React.useEffect(() => {
@@ -110,15 +112,25 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
   return (
     <div className="flex flex-col h-full">
       {/* Workflow Selector */}
-      <div className="border-b border-capital-light-blue/30 p-4 bg-gradient-to-r from-capital-blue/5 to-capital-light-blue/10">
-        <label className="block text-sm font-medium text-capital-dark-blue mb-2">
-          Select Workflow
-        </label>
+      <div className="border-b border-capital-light-blue/30 p-4 bg-gradient-to-r from-capital-blue/5 to-capital-light-blue/10 dark:from-gray-800 dark:to-gray-700">
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-capital-dark-blue dark:text-white">
+            Select Workflow
+          </label>
+          <Button
+            onClick={() => setIsAddWorkflowOpen(true)}
+            size="sm"
+            className="bg-capital-blue hover:bg-capital-dark-blue text-white"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Workflow
+          </Button>
+        </div>
         <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
-          <SelectTrigger className="w-full border-capital-blue/30">
+          <SelectTrigger className="w-full border-capital-blue/30 dark:border-gray-600">
             <SelectValue placeholder="Choose a workflow to get started" />
           </SelectTrigger>
-          <SelectContent className="bg-white border-capital-blue/30">
+          <SelectContent className="bg-white border-capital-blue/30 dark:bg-gray-800 dark:border-gray-600">
             {workflows.map((workflow) => (
               <SelectItem key={workflow.id} value={workflow.id}>
                 {workflow.name}
@@ -129,7 +141,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
 
         {/* Show original workflow name if different from display */}
         {currentWorkflow && (
-          <div className="mt-2 text-xs text-capital-blue/70">
+          <div className="mt-2 text-xs text-capital-blue/70 dark:text-gray-400">
             Original: {currentWorkflow.name}
           </div>
         )}
@@ -139,7 +151,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
           <div className="mt-4 space-y-3">
             {currentWorkflow.fields.map((field) => (
               <div key={field.name}>
-                <label className="block text-sm font-medium text-capital-dark-blue mb-1">
+                <label className="block text-sm font-medium text-capital-dark-blue dark:text-white mb-1">
                   {field.label}
                 </label>
                 {field.type === 'select' ? (
@@ -147,10 +159,10 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
                     value={workflowFields[field.name] || ''} 
                     onValueChange={(value) => setWorkflowFields(prev => ({ ...prev, [field.name]: value }))}
                   >
-                    <SelectTrigger className="w-full border-capital-blue/30">
+                    <SelectTrigger className="w-full border-capital-blue/30 dark:border-gray-600">
                       <SelectValue placeholder={`Select ${field.label.toLowerCase()}...`} />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-capital-blue/30">
+                    <SelectContent className="bg-white border-capital-blue/30 dark:bg-gray-800 dark:border-gray-600">
                       {field.options?.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -164,7 +176,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
                     value={workflowFields[field.name] || ''}
                     onChange={(e) => setWorkflowFields(prev => ({ ...prev, [field.name]: e.target.value }))}
                     placeholder={`Enter ${field.label.toLowerCase()}...`}
-                    className="w-full px-3 py-2 border border-capital-blue/30 rounded-md focus:outline-none focus:ring-2 focus:ring-capital-blue focus:border-transparent"
+                    className="w-full px-3 py-2 border border-capital-blue/30 rounded-md focus:outline-none focus:ring-2 focus:ring-capital-blue focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                   />
                 )}
               </div>
@@ -184,7 +196,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
               className={`max-w-[70%] rounded-lg px-4 py-2 ${
                 message.sender === 'user'
                   ? 'bg-capital-blue text-white'
-                  : 'bg-gray-100 text-gray-800 border border-capital-light-blue/30'
+                  : 'bg-gray-100 text-gray-800 border border-capital-light-blue/30 dark:bg-gray-800 dark:text-white dark:border-gray-600'
               }`}
             >
               {message.workflow && message.sender === 'user' && currentWorkflow && (
@@ -202,9 +214,9 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
       </div>
 
       {/* Input Area - Full Width */}
-      <div className="w-full border-t border-capital-light-blue/30 p-6 bg-white">
+      <div className="w-full border-t border-capital-light-blue/30 p-6 bg-white dark:bg-gray-900 dark:border-gray-600">
         {!selectedWorkflow && (
-          <div className="mb-2 text-sm text-capital-yellow bg-capital-yellow/10 p-2 rounded border border-capital-yellow/30">
+          <div className="mb-2 text-sm text-capital-yellow bg-capital-yellow/10 p-2 rounded border border-capital-yellow/30 dark:bg-yellow-900/20 dark:border-yellow-600/30">
             Please select a workflow above to continue
           </div>
         )}
@@ -216,7 +228,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
             onKeyPress={handleKeyPress}
             placeholder={selectedWorkflow ? "Describe your workflow requirements..." : "Select a workflow first..."}
             disabled={!selectedWorkflow}
-            className="flex-1 border border-capital-blue/30 focus:border-capital-blue disabled:opacity-50 resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px]"
+            className="flex-1 border border-capital-blue/30 focus:border-capital-blue disabled:opacity-50 resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] dark:border-gray-600 dark:bg-gray-800 dark:text-white"
             style={{ overflowY: inputValue.split('\n').length > 5 ? 'auto' : 'hidden' }}
             rows={1}
           />
@@ -225,7 +237,7 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
             variant="outline"
             size="icon"
             disabled={!selectedWorkflow}
-            className="border-capital-blue/30 hover:bg-capital-blue/10 disabled:opacity-50"
+            className="border-capital-blue/30 hover:bg-capital-blue/10 disabled:opacity-50 dark:border-gray-600 dark:hover:bg-gray-700"
           >
             <Upload className="h-4 w-4" />
           </Button>
@@ -234,8 +246,8 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
             variant="outline"
             size="icon"
             disabled={!selectedWorkflow}
-            className={`border-capital-blue/30 disabled:opacity-50 ${
-              isRecording ? 'bg-red-100 text-red-600' : 'hover:bg-capital-blue/10'
+            className={`border-capital-blue/30 disabled:opacity-50 dark:border-gray-600 ${
+              isRecording ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400' : 'hover:bg-capital-blue/10 dark:hover:bg-gray-700'
             }`}
           >
             <Mic className="h-4 w-4" />
@@ -249,6 +261,11 @@ const WorkflowInterface = ({ selectedWorkflowId }: { selectedWorkflowId?: string
           </Button>
         </div>
       </div>
+
+      <AddWorkflowDialog 
+        isOpen={isAddWorkflowOpen} 
+        onClose={() => setIsAddWorkflowOpen(false)} 
+      />
     </div>
   );
 };
