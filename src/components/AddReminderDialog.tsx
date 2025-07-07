@@ -17,9 +17,10 @@ import { companyConfig } from '@/config/company';
 interface AddReminderDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onReminderAdded?: () => void;
 }
 
-const AddReminderDialog = ({ isOpen, onClose }: AddReminderDialogProps) => {
+const AddReminderDialog = ({ isOpen, onClose, onReminderAdded }: AddReminderDialogProps) => {
   const [reminderData, setReminderData] = useState({
     title: '',
     description: '',
@@ -87,8 +88,11 @@ const AddReminderDialog = ({ isOpen, onClose }: AddReminderDialogProps) => {
       notificationMethods: ['popup']
     });
     
+    if (onReminderAdded) {
+      onReminderAdded();
+    }
+    
     onClose();
-    alert('Reminder created successfully! The chat query has been cached for future use.');
   };
 
   return (

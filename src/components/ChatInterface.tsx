@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Upload } from 'lucide-react';
+import { Send, Mic, Upload, Edit2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -9,13 +9,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from '@/components/ui/input';
 import { companyConfig } from '@/config/company';
 
 interface Message {
   id: string;
   content: string;
+  originalContent?: string;
   sender: 'user' | 'assistant';
   timestamp: Date;
+  isEditing?: boolean;
 }
 
 const ChatInterface = () => {
@@ -24,6 +27,9 @@ const ChatInterface = () => {
   const [searchType, setSearchType] = useState('');
   const [clientName, setClientName] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea
@@ -34,6 +40,32 @@ const ChatInterface = () => {
     }
   }, [inputValue]);
 
+  const saveChatToHistory = (chatId: string, messages: Message[], title: string, lastMessage: string) => {
+    const chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+    const existingChatIndex = chatHistory.findIndex((chat: any) => chat.id === chatId);
+    
+    const chatData = {
+      id: chatId,
+      title,
+      lastMessage,
+      timestamp: new Date(),
+      messages: messages.map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.sender,
+        timestamp: msg.timestamp
+      }))
+    };
+
+    if (existingChatIndex >= 0) {
+      chatHistory[existingChatIndex] = chatData;
+    } else {
+      chatHistory.unshift(chatData);
+    }
+
+    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+  };
+
   const sendWebhookRequest = async (searchType: string, clientName: string, query: string) => {
     const webhookData = {
       searchType,
@@ -43,7 +75,6 @@ const ChatInterface = () => {
       userId: 'demo-user-123'
     };
 
-    // Simulate different API endpoints based on search type
     const webhookUrls = {
       client: 'https://api.example.com/webhooks/client-search',
       company: 'https://api.example.com/webhooks/company-search', 
@@ -57,15 +88,13 @@ const ChatInterface = () => {
     console.log('Webhook data:', webhookData);
 
     try {
-      // In a real application, this would be an actual API call
-      // For now, we'll simulate the request
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(webhookData),
-        mode: 'no-cors' // For demo purposes
+        mode: 'no-cors'
       });
 
       console.log('Webhook sent successfully');
@@ -86,7 +115,14 @@ const ChatInterface = () => {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
+
+    // Initialize chat if it's the first message
+    if (!currentChatId) {
+      const chatId = `chat-${Date.now()}`;
+      setCurrentChatId(chatId);
+    }
 
     // Send webhook request if search type is selected
     if (searchType) {
@@ -117,8 +153,46 @@ const ChatInterface = () => {
         sender: 'assistant',
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, aiResponse]);
+      
+      const finalMessages = [...updatedMessages, aiResponse];
+      setMessages(finalMessages);
+
+      // Save to chat history
+      const chatTitle = inputValue.length > 50 ? inputValue.substring(0, 50) + '...' : inputValue;
+      saveChatToHistory(currentChatId || `chat-${Date.now()}`, finalMessages, chatTitle, inputValue);
     }, 1000);
+  };
+
+  const handleEditMessage = (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+    if (message && message.sender === 'user') {
+      setEditingMessageId(messageId);
+      setEditValue(message.content);
+    }
+  };
+
+  const handleSaveEdit = async (messageId: string) => {
+    if (!editValue.trim()) return;
+
+    const updatedMessages = messages.map(msg => 
+      msg.id === messageId 
+        ? { ...msg, content: editValue, originalContent: msg.content }
+        : msg
+    );
+    setMessages(updatedMessages);
+    
+    // Send new webhook request for edited message
+    if (searchType) {
+      await sendWebhookRequest(searchType, clientName, editValue);
+    }
+
+    setEditingMessageId(null);
+    setEditValue('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditValue('');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -209,8 +283,11 @@ const ChatInterface = () => {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask anything"
-              className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-              style={{ overflowY: inputValue.split('\n').length > 5 ? 'auto' : 'hidden' }}
+              className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] dark:border-gray-600 dark:bg-gray-800 dark:text-white overflow-hidden"
+              style={{ 
+                height: 'auto',
+                overflowY: inputValue.split('\n').length > 5 || textareaRef.current?.scrollHeight > 200 ? 'auto' : 'hidden'
+              }}
               rows={1}
             />
             <Button
@@ -253,13 +330,44 @@ const ChatInterface = () => {
             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-lg px-4 py-2 ${
+              className={`max-w-[70%] rounded-lg px-4 py-2 relative group ${
                 message.sender === 'user'
                   ? 'bg-capital-blue text-white'
                   : 'bg-gray-100 text-gray-800 border border-capital-light-blue/30 dark:bg-gray-800 dark:text-white dark:border-gray-600'
               }`}
             >
-              <p className="text-sm">{message.content}</p>
+              {editingMessageId === message.id ? (
+                <div className="space-y-2">
+                  <Input
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="text-sm bg-white text-black"
+                    onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit(message.id)}
+                  />
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(message.id)}>
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm">{message.content}</p>
+                  {message.sender === 'user' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -right-8 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 text-gray-400 hover:text-gray-600"
+                      onClick={() => handleEditMessage(message.id)}
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </>
+              )}
               <span className="text-xs opacity-70 mt-1 block">
                 {message.timestamp.toLocaleTimeString()}
               </span>
@@ -277,8 +385,11 @@ const ChatInterface = () => {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your message here..."
-            className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-            style={{ overflowY: inputValue.split('\n').length > 5 ? 'auto' : 'hidden' }}
+            className="flex-1 border border-capital-blue/30 focus:border-capital-blue resize-none rounded-md px-3 py-2 min-h-[40px] max-h-[200px] dark:border-gray-600 dark:bg-gray-800 dark:text-white overflow-hidden"
+            style={{ 
+              height: 'auto',
+              overflowY: inputValue.split('\n').length > 5 || textareaRef.current?.scrollHeight > 200 ? 'auto' : 'hidden'
+            }}
             rows={1}
           />
           <Button

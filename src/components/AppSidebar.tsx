@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageSquare, Workflow, Bell, Settings } from 'lucide-react';
 import {
   Sidebar,
@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/sidebar";
 import ChatHistory from './ChatHistory';
 import WorkflowSearch from './WorkflowSearch';
-import WorkflowHistory from './WorkflowHistory';
 import SettingsDialog from './SettingsDialog';
 
 interface AppSidebarProps {
@@ -26,9 +25,39 @@ interface AppSidebarProps {
 const AppSidebar = ({ activeView, onViewChange, onWorkflowSelect }: AppSidebarProps) => {
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  
-  // Mock reminder count - in real app this would come from a data source
-  const reminderCount = 5;
+  const [reminderCount, setReminderCount] = useState(0);
+
+  useEffect(() => {
+    // Update reminder count from localStorage
+    const updateReminderCount = () => {
+      const savedReminders = localStorage.getItem('userReminders');
+      if (savedReminders) {
+        const reminders = JSON.parse(savedReminders);
+        setReminderCount(reminders.length);
+      } else {
+        setReminderCount(0);
+      }
+    };
+
+    updateReminderCount();
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'userReminders') {
+        updateReminderCount();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check periodically in case changes happen in same tab
+    const interval = setInterval(updateReminderCount, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   const menuItems = [
     {
@@ -45,7 +74,7 @@ const AppSidebar = ({ activeView, onViewChange, onWorkflowSelect }: AppSidebarPr
       title: "Reminders",
       icon: Bell,
       view: 'reminders' as const,
-      badge: reminderCount,
+      badge: reminderCount > 0 ? reminderCount : undefined,
     },
   ];
 
@@ -95,22 +124,18 @@ const AppSidebar = ({ activeView, onViewChange, onWorkflowSelect }: AppSidebarPr
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Conditional content based on active view */}
-          {activeView === 'chat' && (
+          {/* Show ChatHistory for both chat and workflows views */}
+          {(activeView === 'chat' || activeView === 'workflows') && (
             <SidebarGroup>
               <ChatHistory />
             </SidebarGroup>
           )}
 
+          {/* Show WorkflowSearch only for workflows view */}
           {activeView === 'workflows' && (
-            <>
-              <SidebarGroup>
-                <WorkflowSearch onWorkflowSelect={handleWorkflowSelect} />
-              </SidebarGroup>
-              <SidebarGroup>
-                <WorkflowHistory selectedWorkflow={selectedWorkflow} />
-              </SidebarGroup>
-            </>
+            <SidebarGroup>
+              <WorkflowSearch onWorkflowSelect={handleWorkflowSelect} />
+            </SidebarGroup>
           )}
         </SidebarContent>
         
