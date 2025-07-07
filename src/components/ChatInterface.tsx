@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Upload, Edit2, Check, X } from 'lucide-react';
+import { Send, Mic, Upload, Edit2, Check, X, UserPlus, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -9,6 +8,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
 import { companyConfig } from '@/config/company';
 
@@ -21,16 +26,65 @@ interface Message {
   isEditing?: boolean;
 }
 
-const ChatInterface = () => {
+interface ChatInterfaceProps {
+  selectedChatId?: string;
+  onChatUpdate?: () => void;
+}
+
+// Mock organization members
+const organizationMembers = [
+  { id: '1', name: 'John Smith', email: 'john@company.com' },
+  { id: '2', name: 'Sarah Johnson', email: 'sarah@company.com' },
+  { id: '3', name: 'Mike Davis', email: 'mike@company.com' },
+  { id: '4', name: 'Emily Chen', email: 'emily@company.com' },
+  { id: '5', name: 'David Wilson', email: 'david@company.com' },
+];
+
+const ChatInterface = ({ selectedChatId, onChatUpdate }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [searchType, setSearchType] = useState('');
   const [clientName, setClientName] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(selectedChatId || null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load chat when selectedChatId changes
+  useEffect(() => {
+    if (selectedChatId) {
+      loadChatHistory(selectedChatId);
+      setCurrentChatId(selectedChatId);
+    } else {
+      // Reset to new chat
+      setMessages([]);
+      setCurrentChatId(null);
+      setUploadedFile(null);
+    }
+  }, [selectedChatId]);
+
+  const loadChatHistory = (chatId: string) => {
+    const currentUser = localStorage.getItem('currentUser') || 'demo-user';
+    const chatHistory = JSON.parse(localStorage.getItem(`chatHistory_${currentUser}`) || '[]');
+    const chat = chatHistory.find((c: any) => c.id === chatId);
+    
+    if (chat) {
+      const loadedMessages = chat.messages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }));
+      setMessages(loadedMessages);
+      
+      // Load any user preferences for this chat if they exist
+      const lastUserMessage = loadedMessages.reverse().find((msg: any) => msg.sender === 'user');
+      if (lastUserMessage && chat.searchType) {
+        setSearchType(chat.searchType);
+        setClientName(chat.clientName || '');
+      }
+    }
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -41,14 +95,18 @@ const ChatInterface = () => {
   }, [inputValue]);
 
   const saveChatToHistory = (chatId: string, messages: Message[], title: string, lastMessage: string) => {
-    const chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+    const currentUser = localStorage.getItem('currentUser') || 'demo-user';
+    const chatHistory = JSON.parse(localStorage.getItem(`chatHistory_${currentUser}`) || '[]');
     const existingChatIndex = chatHistory.findIndex((chat: any) => chat.id === chatId);
     
     const chatData = {
       id: chatId,
       title,
+      customTitle: existingChatIndex >= 0 ? chatHistory[existingChatIndex].customTitle : undefined,
       lastMessage,
       timestamp: new Date(),
+      searchType,
+      clientName,
       messages: messages.map(msg => ({
         id: msg.id,
         content: msg.content,
@@ -63,17 +121,34 @@ const ChatInterface = () => {
       chatHistory.unshift(chatData);
     }
 
-    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    // Keep only last 50 chats per user
+    if (chatHistory.length > 50) {
+      chatHistory.splice(50);
+    }
+
+    localStorage.setItem(`chatHistory_${currentUser}`, JSON.stringify(chatHistory));
+    
+    // Trigger chat history update
+    if (onChatUpdate) {
+      onChatUpdate();
+    }
   };
 
-  const sendWebhookRequest = async (searchType: string, clientName: string, query: string) => {
-    const webhookData = {
+  const sendWebhookRequest = async (searchType: string, clientName: string, query: string, file?: File) => {
+    const webhookData: any = {
       searchType,
       clientName,
       query,
       timestamp: new Date().toISOString(),
-      userId: 'demo-user-123'
+      userId: localStorage.getItem('currentUser') || 'demo-user-123'
     };
+
+    // Add file data if present
+    if (file) {
+      webhookData.fileName = file.name;
+      webhookData.fileSize = file.size;
+      webhookData.fileType = file.type;
+    }
 
     const webhookUrls = {
       client: 'https://api.example.com/webhooks/client-search',
@@ -119,14 +194,15 @@ const ChatInterface = () => {
     setMessages(updatedMessages);
 
     // Initialize chat if it's the first message
-    if (!currentChatId) {
-      const chatId = `chat-${Date.now()}`;
+    let chatId = currentChatId;
+    if (!chatId) {
+      chatId = `chat-${Date.now()}`;
       setCurrentChatId(chatId);
     }
 
     // Send webhook request if search type is selected
     if (searchType) {
-      await sendWebhookRequest(searchType, clientName, inputValue);
+      await sendWebhookRequest(searchType, clientName, inputValue, uploadedFile || undefined);
     }
 
     setInputValue('');
@@ -144,6 +220,10 @@ const ChatInterface = () => {
           responseContent += `The search is specifically for ${clientLabel}. `;
         }
         
+        if (uploadedFile) {
+          responseContent += `I've also included the file "${uploadedFile.name}" in the analysis. `;
+        }
+        
         responseContent += 'You should receive the results shortly.';
       }
 
@@ -159,8 +239,34 @@ const ChatInterface = () => {
 
       // Save to chat history
       const chatTitle = inputValue.length > 50 ? inputValue.substring(0, 50) + '...' : inputValue;
-      saveChatToHistory(currentChatId || `chat-${Date.now()}`, finalMessages, chatTitle, inputValue);
+      saveChatToHistory(chatId!, finalMessages, chatTitle, inputValue);
     }, 1000);
+  };
+
+  const handleShareChat = (memberId: string) => {
+    const member = organizationMembers.find(m => m.id === memberId);
+    if (member) {
+      console.log(`Sharing chat with ${member.name} (${member.email})`);
+      // In a real app, this would send the chat data to the selected user
+    }
+  };
+
+  const handleFileUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '*/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        setUploadedFile(file);
+        console.log('File selected:', file.name);
+      }
+    };
+    input.click();
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
   };
 
   const handleEditMessage = (messageId: string) => {
@@ -183,7 +289,7 @@ const ChatInterface = () => {
     
     // Send new webhook request for edited message
     if (searchType) {
-      await sendWebhookRequest(searchType, clientName, editValue);
+      await sendWebhookRequest(searchType, clientName, editValue, uploadedFile || undefined);
     }
 
     setEditingMessageId(null);
@@ -204,19 +310,6 @@ const ChatInterface = () => {
 
   const handleMicrophoneToggle = () => {
     setIsRecording(!isRecording);
-  };
-
-  const handleFileUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '*/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        console.log('File selected:', file.name);
-      }
-    };
-    input.click();
   };
 
   const getGreeting = () => {
@@ -276,6 +369,17 @@ const ChatInterface = () => {
 
         {/* Full width input area at bottom */}
         <div className="w-full p-6 bg-gray-50 border-t border-capital-light-blue/30 dark:bg-gray-900 dark:border-gray-600">
+          {uploadedFile && (
+            <div className="mb-3 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <span>📄 {uploadedFile.name}</span>
+              <button
+                onClick={handleRemoveFile}
+                className="text-red-500 hover:text-red-700"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
           <div className="flex gap-2 items-end max-w-full">
             <textarea
               ref={textareaRef}
@@ -322,6 +426,32 @@ const ChatInterface = () => {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Header with Share Button */}
+      <div className="border-b border-capital-light-blue/30 p-4 flex justify-end dark:border-gray-600">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="border-capital-blue/30 text-capital-dark-blue hover:bg-capital-blue/10 dark:border-gray-600 dark:text-white">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Someone
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56 bg-white dark:bg-gray-800 border-capital-blue/30 dark:border-gray-600">
+            {organizationMembers.map((member) => (
+              <DropdownMenuItem 
+                key={member.id}
+                onClick={() => handleShareChat(member.id)}
+                className="hover:bg-capital-blue/10 dark:hover:bg-gray-700"
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium">{member.name}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{member.email}</span>
+                </div>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
@@ -378,6 +508,17 @@ const ChatInterface = () => {
 
       {/* Input Area - Full Width */}
       <div className="w-full border-t border-capital-light-blue/30 p-6 bg-white dark:bg-gray-900 dark:border-gray-600">
+        {uploadedFile && (
+          <div className="mb-3 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <span>📄 {uploadedFile.name}</span>
+            <button
+              onClick={handleRemoveFile}
+              className="text-red-500 hover:text-red-700"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
         <div className="flex gap-2 items-end">
           <textarea
             ref={textareaRef}

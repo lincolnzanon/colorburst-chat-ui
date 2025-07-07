@@ -10,6 +10,8 @@ interface ChatHistoryItem {
   customTitle?: string;
   lastMessage: string;
   timestamp: Date;
+  searchType?: string;
+  clientName?: string;
   messages: Array<{
     id: string;
     content: string;
@@ -20,10 +22,11 @@ interface ChatHistoryItem {
 
 interface ChatHistoryProps {
   onChatSelect?: (chatId: string) => void;
-  onMessageEdit?: (chatId: string, messageId: string, newContent: string) => void;
+  selectedChatId?: string;
+  onUpdateTrigger?: number;
 }
 
-const ChatHistory = ({ onChatSelect, onMessageEdit }: ChatHistoryProps) => {
+const ChatHistory = ({ onChatSelect, selectedChatId, onUpdateTrigger }: ChatHistoryProps) => {
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -32,8 +35,13 @@ const ChatHistory = ({ onChatSelect, onMessageEdit }: ChatHistoryProps) => {
   const [filteredChats, setFilteredChats] = useState<ChatHistoryItem[]>([]);
 
   useEffect(() => {
-    // Load chat history from localStorage
-    const savedChats = localStorage.getItem('chatHistory');
+    loadChatHistory();
+  }, [onUpdateTrigger]);
+
+  const loadChatHistory = () => {
+    // Load chat history for current user
+    const currentUser = localStorage.getItem('currentUser') || 'demo-user';
+    const savedChats = localStorage.getItem(`chatHistory_${currentUser}`);
     if (savedChats) {
       const parsedChats = JSON.parse(savedChats).map((chat: any) => ({
         ...chat,
@@ -45,8 +53,11 @@ const ChatHistory = ({ onChatSelect, onMessageEdit }: ChatHistoryProps) => {
       }));
       setChatHistory(parsedChats);
       setFilteredChats(parsedChats);
+    } else {
+      setChatHistory([]);
+      setFilteredChats([]);
     }
-  }, []);
+  };
 
   useEffect(() => {
     // Filter chats based on search query
@@ -72,8 +83,9 @@ const ChatHistory = ({ onChatSelect, onMessageEdit }: ChatHistoryProps) => {
   };
 
   const saveChatHistory = (updatedChats: ChatHistoryItem[]) => {
+    const currentUser = localStorage.getItem('currentUser') || 'demo-user';
     setChatHistory(updatedChats);
-    localStorage.setItem('chatHistory', JSON.stringify(updatedChats));
+    localStorage.setItem(`chatHistory_${currentUser}`, JSON.stringify(updatedChats));
   };
 
   const handleStartEdit = (id: string, currentTitle: string) => {
@@ -100,6 +112,11 @@ const ChatHistory = ({ onChatSelect, onMessageEdit }: ChatHistoryProps) => {
   const handleDelete = (id: string) => {
     const updatedChats = chatHistory.filter(chat => chat.id !== id);
     saveChatHistory(updatedChats);
+    
+    // If deleted chat was selected, clear selection
+    if (selectedChatId === id && onChatSelect) {
+      onChatSelect('');
+    }
   };
 
   const handleChatClick = (chatId: string) => {
@@ -133,10 +150,26 @@ const ChatHistory = ({ onChatSelect, onMessageEdit }: ChatHistoryProps) => {
         </div>
       )}
 
+      {filteredChats.length === 0 && searchQuery && (
+        <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
+          No chats found matching "{searchQuery}"
+        </div>
+      )}
+
+      {filteredChats.length === 0 && !searchQuery && (
+        <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
+          No chat history yet
+        </div>
+      )}
+
       {filteredChats.map((chat) => (
         <div
           key={chat.id}
-          className="p-2 rounded-lg hover:bg-capital-blue/5 cursor-pointer border border-transparent hover:border-capital-blue/20 transition-colors"
+          className={`p-2 rounded-lg cursor-pointer border transition-colors ${
+            selectedChatId === chat.id
+              ? 'bg-capital-blue/10 border-capital-blue/40 dark:bg-gray-700 dark:border-gray-500'
+              : 'hover:bg-capital-blue/5 border-transparent hover:border-capital-blue/20'
+          }`}
           onClick={() => handleChatClick(chat.id)}
         >
           <div className="flex items-start gap-2">
@@ -149,6 +182,7 @@ const ChatHistory = ({ onChatSelect, onMessageEdit }: ChatHistoryProps) => {
                     onChange={(e) => setEditValue(e.target.value)}
                     className="text-xs h-6 px-2"
                     onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit(chat.id)}
+                    onClick={(e) => e.stopPropagation()}
                   />
                   <Button
                     variant="ghost"
