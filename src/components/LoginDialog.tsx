@@ -13,20 +13,29 @@ import { User, Lock } from 'lucide-react';
 interface LoginDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onLogin?: () => void;
 }
 
-const LoginDialog = ({ isOpen, onClose }: LoginDialogProps) => {
+const LoginDialog = ({ isOpen, onClose, onLogin }: LoginDialogProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
     console.log('Login attempt:', { email, password });
-    onClose();
+    if (onLogin) {
+      onLogin();
+    } else {
+      onClose();
+    }
   };
 
   const handleGoogleLogin = () => {
     console.log('Google login attempt');
-    onClose();
+    if (onLogin) {
+      onLogin();
+    } else {
+      onClose();
+    }
   };
 
   return (
