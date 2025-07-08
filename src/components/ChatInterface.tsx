@@ -280,16 +280,22 @@ const ChatInterface = ({ selectedChatId, onChatUpdate }: ChatInterfaceProps) => 
   const handleSaveEdit = async (messageId: string) => {
     if (!editValue.trim()) return;
 
-    const updatedMessages = messages.map(msg => 
-      msg.id === messageId 
-        ? { ...msg, content: editValue, originalContent: msg.content }
-        : msg
-    );
+    // Find the edited message index
+    const editedMessageIndex = messages.findIndex(msg => msg.id === messageId);
+    if (editedMessageIndex === -1) return;
+
+    // Get all messages up to and including the edited message
+    const messagesToKeep = messages.slice(0, editedMessageIndex);
+    const editedMessage = { ...messages[editedMessageIndex], content: editValue, originalContent: messages[editedMessageIndex].content };
+    const updatedMessages = [...messagesToKeep, editedMessage];
+    
     setMessages(updatedMessages);
     
-    // Send new webhook request for edited message
+    // Send new webhook request with all previous messages as context
     if (searchType) {
-      await sendWebhookRequest(searchType, clientName, editValue, uploadedFile || undefined);
+      const conversationContext = messagesToKeep.map(msg => `${msg.sender}: ${msg.content}`).join('\n');
+      const fullContext = conversationContext ? `${conversationContext}\nuser: ${editValue}` : editValue;
+      await sendWebhookRequest(searchType, clientName, fullContext, uploadedFile || undefined);
     }
 
     // Save updated chat to history
@@ -430,10 +436,26 @@ const ChatInterface = ({ selectedChatId, onChatUpdate }: ChatInterfaceProps) => 
     );
   }
 
+  const getSearchDisplayText = () => {
+    if (!searchType) return 'General search';
+    
+    const searchLabel = companyConfig.searchOptions.find(opt => opt.value === searchType)?.label || searchType;
+    
+    if (searchType === 'client' && clientName) {
+      const clientLabel = companyConfig.clients.find(client => client.value === clientName)?.label || clientName;
+      return `${searchLabel} - ${clientLabel}`;
+    }
+    
+    return searchLabel;
+  };
+
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
-      {/* Header with Share Button */}
-      <div className="border-b border-capital-light-blue/30 p-4 flex justify-end dark:border-gray-600 flex-shrink-0">
+      {/* Header with Search Type and Share Button */}
+      <div className="border-b border-capital-light-blue/30 p-4 flex justify-between items-center dark:border-gray-600 flex-shrink-0">
+        <div className="text-sm text-capital-dark-blue dark:text-white bg-capital-blue/5 px-3 py-1 rounded-full border border-capital-blue/20">
+          {getSearchDisplayText()}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="border-capital-blue/30 text-capital-dark-blue hover:bg-capital-blue/10 dark:border-gray-600 dark:text-white">
@@ -491,17 +513,17 @@ const ChatInterface = ({ selectedChatId, onChatUpdate }: ChatInterfaceProps) => 
                 </div>
               ) : (
                 <>
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   {message.sender === 'user' && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute -right-8 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 text-gray-400 hover:text-gray-600"
+                      className="absolute -left-8 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 text-gray-400 hover:text-gray-600"
                       onClick={() => handleEditMessage(message.id)}
                     >
                       <Edit2 className="h-3 w-3" />
                     </Button>
                   )}
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </>
               )}
               <span 

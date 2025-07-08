@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageSquare, Trash2, Edit2, Check, X, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { companyConfig } from '@/config/company';
 
 interface ChatHistoryItem {
   id: string;
@@ -125,6 +126,19 @@ const ChatHistory = ({ onChatSelect, selectedChatId, onUpdateTrigger }: ChatHist
     }
   };
 
+  const getSearchDisplayText = (chat: ChatHistoryItem) => {
+    if (!chat.searchType) return 'General search';
+    
+    const searchLabel = companyConfig.searchOptions.find(opt => opt.value === chat.searchType)?.label || chat.searchType;
+    
+    if (chat.searchType === 'client' && chat.clientName) {
+      const clientLabel = companyConfig.clients.find(client => client.value === chat.clientName)?.label || chat.clientName;
+      return `${searchLabel} - ${clientLabel}`;
+    }
+    
+    return searchLabel;
+  };
+
   return (
     <div className="p-3 space-y-2">
       <div className="flex items-center justify-between mb-3">
@@ -213,7 +227,7 @@ const ChatHistory = ({ onChatSelect, selectedChatId, onUpdateTrigger }: ChatHist
                 </p>
               )}
               <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                {chat.lastMessage}
+                {getSearchDisplayText(chat)}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                 {formatTimestamp(chat.timestamp)}
