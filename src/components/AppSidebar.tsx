@@ -154,7 +154,7 @@ const AppSidebar = ({
           {activeView === 'chat' && (
             <SidebarGroup>
               <div className="flex items-center justify-between px-3 mb-2">
-                <span className="text-sm font-medium text-capital-dark-blue dark:text-white">Chats</span>
+                <span className="text-sm font-medium text-capital-dark-blue dark:text-white">Chat</span>
                 <Button
                   variant="ghost"
                   size="icon"

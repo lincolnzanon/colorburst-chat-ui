@@ -150,7 +150,7 @@ const ChatInterface = ({ selectedChatId, onChatUpdate }: ChatInterfaceProps) => 
       webhookData.fileType = file.type;
     }
 
-    const webhookUrls = {
+    const webhookUrls = companyConfig.webhooks || {
       client: 'https://api.example.com/webhooks/client-search',
       company: 'https://api.example.com/webhooks/company-search', 
       financials: 'https://api.example.com/webhooks/financial-search',
@@ -292,6 +292,12 @@ const ChatInterface = ({ selectedChatId, onChatUpdate }: ChatInterfaceProps) => 
       await sendWebhookRequest(searchType, clientName, editValue, uploadedFile || undefined);
     }
 
+    // Save updated chat to history
+    if (currentChatId) {
+      const chatTitle = editValue.length > 50 ? editValue.substring(0, 50) + '...' : editValue;
+      saveChatToHistory(currentChatId, updatedMessages, chatTitle, editValue);
+    }
+
     setEditingMessageId(null);
     setEditValue('');
   };
@@ -323,7 +329,7 @@ const ChatInterface = ({ selectedChatId, onChatUpdate }: ChatInterfaceProps) => 
   if (messages.length === 0) {
     return (
       <div className="flex flex-col h-full w-full overflow-hidden">
-        <div className="flex-1 flex items-center justify-center px-4">
+        <div className="flex-1 flex items-center justify-center px-4 overflow-hidden">
           <div className="text-center space-y-6 w-full max-w-4xl">
             <h2 className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white">
               {getGreeting()} {companyConfig.greeting.userName}
@@ -453,14 +459,14 @@ const ChatInterface = ({ selectedChatId, onChatUpdate }: ChatInterfaceProps) => 
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 w-full">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 w-full">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex w-full ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] md:max-w-[70%] rounded-lg px-4 py-2 relative group break-words ${
+              className={`max-w-[85%] md:max-w-[70%] rounded-lg px-4 py-2 relative group break-words overflow-hidden ${
                 message.sender === 'user'
                   ? 'bg-capital-blue text-white'
                   : 'bg-gray-100 text-gray-800 border border-capital-light-blue/30 dark:bg-gray-800 dark:text-white dark:border-gray-600'
@@ -498,8 +504,11 @@ const ChatInterface = ({ selectedChatId, onChatUpdate }: ChatInterfaceProps) => 
                   )}
                 </>
               )}
-              <span className="text-xs opacity-70 mt-1 block">
-                {message.timestamp.toLocaleTimeString()}
+              <span 
+                className="text-xs opacity-70 mt-1 block"
+                title={message.timestamp.toLocaleDateString()}
+              >
+                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           </div>

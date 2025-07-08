@@ -22,5 +22,11 @@ export const companyConfig = {
     { value: 'tech-solutions', label: 'Tech Solutions Ltd' },
     { value: 'global-industries', label: 'Global Industries' },
     { value: 'startup-inc', label: 'Startup Inc' },
-  ]
+  ],
+  webhooks: {
+    client: 'https://api.example.com/webhooks/client-search',
+    company: 'https://api.example.com/webhooks/company-search', 
+    financials: 'https://api.example.com/webhooks/financial-search',
+    crm: 'https://api.example.com/webhooks/crm-search'
+  }
 };
