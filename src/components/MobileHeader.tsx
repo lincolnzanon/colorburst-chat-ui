@@ -58,6 +58,10 @@ const MobileHeader = ({ activeView, onViewChange, onNewChat, reminderCount }: Mo
               <MessageSquare className="h-4 w-4 mr-2" />
               New Chat
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onViewChange('chat')}>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Chat History
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onViewChange('workflows')}>
               <Workflow className="h-4 w-4 mr-2" />
               Workflows

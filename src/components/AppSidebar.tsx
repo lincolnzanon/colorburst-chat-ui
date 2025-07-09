@@ -138,13 +138,14 @@ const AppSidebar = ({
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                      {item.view === 'chat' && (
+                       {item.view === 'chat' && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="ml-auto h-5 w-5 hover:bg-capital-blue/10"
                           onClick={(e) => {
                             e.stopPropagation();
+                            onViewChange('chat');
                             handleNewChat();
                           }}
                         >
